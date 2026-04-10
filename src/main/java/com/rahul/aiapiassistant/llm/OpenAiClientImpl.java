@@ -8,8 +8,10 @@ import com.rahul.aiapiassistant.config.OpenAiProperties;
 import com.rahul.aiapiassistant.exception.LlmIntegrationException;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OpenAiClientImpl implements LlmClient {
@@ -19,6 +21,7 @@ public class OpenAiClientImpl implements LlmClient {
 
     private OpenAIClient getSdkClient() {
         if (sdkClient == null) {
+            log.info("Initializing OpenAI SDK client");
             sdkClient = OpenAIOkHttpClient.builder()
                     .apiKey(openAiProperties.getApiKey())
                     .build();
@@ -29,6 +32,8 @@ public class OpenAiClientImpl implements LlmClient {
     @Override
     public String generateApiDesignJson(String prompt) {
         try {
+            log.info("Calling OpenAI model={}", openAiProperties.getModel());
+
             ResponseCreateParams params = ResponseCreateParams.builder()
                     .input(prompt)
                     .model(openAiProperties.getModel())
@@ -44,11 +49,15 @@ public class OpenAiClientImpl implements LlmClient {
                 throw new LlmIntegrationException("OpenAI returned an empty response", null);
             }
 
+            log.info("OpenAI response text extracted successfully");
+            log.debug("Extracted LLM text: {}", outputText);
+
             return outputText;
 
         } catch (LlmIntegrationException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Failed while calling OpenAI API", e);
             throw new LlmIntegrationException("Failed to call OpenAI API", e);
         }
     }

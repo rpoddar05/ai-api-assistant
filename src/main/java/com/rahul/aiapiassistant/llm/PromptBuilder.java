@@ -3,10 +3,12 @@ package com.rahul.aiapiassistant.llm;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rahul.aiapiassistant.dto.request.ApiDesignRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class PromptBuilder {
 
     private final ObjectMapper objectMapper;
@@ -16,23 +18,26 @@ public class PromptBuilder {
             String requestJson = objectMapper.writerWithDefaultPrettyPrinter()
                     .writeValueAsString(request);
 
-            return """
+            String prompt = """
                     You are a senior backend API design assistant.
 
-                    Return ONLY valid JSON.
-                    Do not include markdown.
-                    Do not include code fences.
-                    Do not include explanation before or after the JSON.
-                    Every field must exactly match the required schema.
-                    Do not add extra fields.
-                    Do not rename fields.
-                    If no validations or error handling items exist, return empty arrays.
+                    Your task is to analyze API requirements and return ONLY valid JSON.
 
-                    Input requirements:
+                    STRICT RULES:
+                    1. Return only JSON.
+                    2. Do not include markdown.
+                    3. Do not include code fences.
+                    4. Do not include commentary or explanation.
+                    5. Do not add extra fields.
+                    6. Do not rename fields.
+                    7. Every field in the required schema must be present.
+                    8. If a list has no items, return an empty array.
+                    9. Keep class names and endpoint naming aligned with the requested resource and operation.
+
+                    INPUT REQUIREMENTS:
                     %s
 
-                    Return JSON in exactly this schema:
-
+                    REQUIRED RESPONSE SCHEMA:
                     {
                       "resourceName": "string",
                       "operation": "string",
@@ -62,7 +67,11 @@ public class PromptBuilder {
                     }
                     """.formatted(requestJson);
 
+            log.debug("Prompt built successfully");
+            return prompt;
+
         } catch (Exception e) {
+            log.error("Failed to build prompt", e);
             throw new RuntimeException("Failed to build prompt", e);
         }
     }
